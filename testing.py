@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
 import sys, inspect, traceback
+from string import capwords
+
 import utilities.cursor as cursor
 import utilities.muffler as muffler
+import utilities.string as string
 
 class Suite:
 
@@ -136,7 +139,7 @@ class Test:
         # starting with the name of the given function, converting any
         # underscores into spaces, and capitalizing each word.
         
-        self.name = function.__name__.replace('_', ' ').capitalize()
+        self.name = capwords(function.__name__.replace('_', ' '))
 
 
     # Run Method {{{1
@@ -158,34 +161,30 @@ class Test:
 class Runner:
 
     # Constructor {{{1
-    def __init__(self, suite):
-        self.suite = suite
-
-        self.successes = 0
-        self.failures = 0
-
-        self.test = 0
-        self.tests = 0
-
-        self.first_failure = None
-
+    def __init__(self):
         self.format = '(%d/%d)'
         self.status = ''
-        self.backspace = ''
 
     # }}}1
 
     # Testing Methods {{{1
-    def run(self):
+    def run(self, suite):
 
         # Get ready.
-        self.tests = self.suite.get_tests()
+        self.successes = 0
+        self.failures = 0
+        self.test = 0
+
+        self.first_failure = None
+
+        self.tests = suite.get_tests()
+        self.title = suite.get_title() + ' '
 
         self.write_header()
         self.write_progress()
 
         # Run the tests.
-        self.suite.run(self.update)
+        suite.run(self.update)
 
         # Show the results.
         self.write_progress()
@@ -208,9 +207,7 @@ class Runner:
     # Drawing Methods {{{1
 
     def write_header(self):
-        title = self.suite.get_title() + ' '
-
-        cursor.write(title)
+        cursor.write(self.title)
         cursor.save()
 
     def write_progress(self):
@@ -239,19 +236,45 @@ class Runner:
 
     # }}}1
 
+# These global variables provide an easy way to use this testing framework.
 default_title = "Running all tests..."
 
 global_suite = Suite(default_title)
-global_runner = Runner(global_suite)
+global_runner = Runner()
 
-run = global_runner.run
 test = global_suite.test
 setup = global_suite.setup
 teardown = global_suite.teardown
 title = global_suite.set_title
 
+# Global Runner Function {{{1
+def run(suite=global_suite):
+
+    if not suite.get_tests():
+
+        message = string.wrap(
+                "The given test suite does not have any tests to run.  ",
+                "If you are using your own test suites, you can get this ",
+                "error by forgetting to pass them into the run() function.")
+
+        raise ValueError(message)
+
+    return global_runner.run(suite)
+
+# }}}1
+
 if __name__ == "__main__":
+
+    # This is primarily a test of the framework, but it also serves as an
+    # example of to using it to run simple tests.  
+
     import time
+
+    # Test functions can be easily specified using decorators.  There are three
+    # different decorators available to use: @test, @setup, and @teardown.
+    # The first specifies a function that contains testing code.  The second
+    # and third specify functions to call before and after every individual
+    # test.
 
     @setup
     def test_setup(helper):
@@ -272,6 +295,10 @@ if __name__ == "__main__":
     @test
     def test_3(helper):
         time.sleep(1); print 'Debugging output for 3.'; raise ZeroDivisionError
+
+    # Once all of the tests have been specified, they can be executed using the
+    # run() function.  The title() function can be optionally used to control
+    # the title used in the output.
 
     title("Testing the tests...")
     run()
