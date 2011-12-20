@@ -150,7 +150,7 @@ class Test:
                 self.function(self.helper)
                 self.teardown(self.helper)
 
-            except Exception:
+            except:
                 return Test.Failure(self, output, traceback.format_exc())
 
             else:
