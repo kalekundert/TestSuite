@@ -168,27 +168,29 @@ class Runner:
     # }}}1
 
     # Testing Methods {{{1
-    def run(self, suite):
+    def run(self, *suites):
 
-        # Get ready.
-        self.successes = 0
-        self.failures = 0
-        self.test = 0
+        for suite in suites:
 
-        self.first_failure = None
+            # Get ready.
+            self.successes = 0
+            self.failures = 0
+            self.test = 0
 
-        self.tests = suite.get_tests()
-        self.title = suite.get_title() + ' '
+            self.first_failure = None
 
-        self.write_header()
-        self.write_progress()
+            self.tests = suite.get_tests()
+            self.title = suite.get_title() + ' '
 
-        # Run the tests.
-        suite.run(self.update)
+            self.write_header()
+            self.write_progress()
 
-        # Show the results.
-        self.write_progress()
-        self.write_debug_info()
+            # Run the tests.
+            suite.run(self.update)
+
+            # Show the results.
+            self.write_progress()
+            self.write_debug_info()
 
     def update(self, result):
 
