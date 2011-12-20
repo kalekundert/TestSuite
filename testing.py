@@ -252,18 +252,9 @@ teardown = global_suite.teardown
 title = global_suite.set_title
 
 # Global Runner Function {{{1
-def run(suite=global_suite):
-
-    if not suite.get_tests():
-
-        message = string.wrap(
-                "The given test suite does not have any tests to run.  ",
-                "If you are using your own test suites, you can get this ",
-                "error by forgetting to pass them into the run() function.")
-
-        raise ValueError(message)
-
-    return global_runner.run(suite)
+def run(*suites):
+    if not suites: suites = [global_suite]
+    return global_runner.run(*suites)
 
 # }}}1
 
