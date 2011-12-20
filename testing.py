@@ -7,6 +7,28 @@ import utilities.cursor as cursor
 import utilities.muffler as muffler
 import utilities.string as string
 
+# Skip Decorator
+# ==============
+# Having the ability to skip tests would be useful.  A good way to do this
+# would be to add a skip decorator.  The suite would keep track of the tests
+# that are being skipped, and the final status would be displayed in yellow
+# rather than green.
+#
+# A related problem is preventing users from simply removing the test
+# decorator.  This is a bad practice, because it's very easy to forget to add
+# the test back later.  To address this, I should allow users to specify
+# exactly how many tests there are.
+#
+# If there aren't the right number of tests, or if there are no tests, the
+# suite will fail.  
+
+# Stop on Failure
+# ===============
+# Since this framework only reports the results of the first failed test, there
+# isn't any point running additional tests after a failure.  This is especially
+# annoying when all of the tests are stuck in infinite loops, because you have
+# to press ^C several times to get back to the terminal.
+
 class Suite:
 
     # Constructor and Iterator {{{1
