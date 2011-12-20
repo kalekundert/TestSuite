@@ -265,8 +265,8 @@ def run(suite=global_suite):
 
 if __name__ == "__main__":
 
-    # This is primarily a test of the framework, but it also serves as an
-    # example of to using it to run simple tests.  
+    # This is primarily a test of the framework, but it also shows how to use
+    # it to run simple tests.
 
     import time
 
@@ -302,3 +302,4 @@ if __name__ == "__main__":
 
     title("Testing the tests...")
     run()
+
