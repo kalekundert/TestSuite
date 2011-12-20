@@ -215,6 +215,8 @@ class Runner:
         status = '(%d/%d)' % (self.test, self.tests)
 
         cursor.restore()
+        cursor.clear_eol()
+
         cursor.write_color(status, color, "bold")
 
     def write_debug_info(self):
