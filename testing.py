@@ -27,7 +27,8 @@ import utilities.string as string
 # Since this framework only reports the results of the first failed test, there
 # isn't any point running additional tests after a failure.  This is especially
 # annoying when all of the tests are stuck in infinite loops, because you have
-# to press ^C several times to get back to the terminal.
+# to press ^C several times to get back to the terminal, and when the tests are
+# expensive and run slowly.
 
 class Suite:
 
@@ -253,7 +254,7 @@ class Runner:
         else:
             print; print
 
-            header = "'%s' Debugging Information:" % failure.name
+            header = "Test failed: %s" % failure.name
             print cursor.color(header, "red", "bold")
 
             print failure.output
