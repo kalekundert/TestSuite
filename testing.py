@@ -7,6 +7,29 @@ import utilities.cursor as cursor
 import utilities.muffler as muffler
 import utilities.text as text
 
+# Skip Decorator
+# ==============
+# Having the ability to skip tests would be useful.  A good way to do this
+# would be to add a skip decorator.  The suite would keep track of the tests
+# that are being skipped, and the final status would be displayed in yellow
+# rather than green.
+#
+# A related problem is preventing users from simply removing the test
+# decorator.  This is a bad practice, because it's very easy to forget to add
+# the test back later.  To address this, I should allow users to specify
+# exactly how many tests there are.
+#
+# If there aren't the right number of tests, or if there are no tests, the
+# suite will fail.  
+
+# Stop on Failure
+# ===============
+# Since this framework only reports the results of the first failed test, there
+# isn't any point running additional tests after a failure.  This is especially
+# annoying when all of the tests are stuck in infinite loops, because you have
+# to press ^C several times to get back to the terminal, and when the tests are
+# expensive and run slowly.
+
 class Suite:
 
     def __init__(self, title, stop_on_error=False):
@@ -29,13 +52,23 @@ class Suite:
     def run(self, callback=lambda result: None):
         results = []
 
+        # Complain if there are no tests to run.
+        if not self.tests:
+            message = text.wrap(
+                    "\nThe '%s' suite does not have any " % suite.get_title(),
+                    "tests to run. If you are using your own test suite, ",
+                    "you can get this error by forgetting to pass it into ",
+                    "the run() function.")
+            raise ValueError(message)
+
+        # Run the tests.
         for test in self.tests:
             result = test.run()
             callback(result)
             self.results.append(result)
 
-            #if not result and self.stop_on_error:
-                #break
+            if not result and self.stop_on_error:
+                break
 
         self.finished = True
 
@@ -88,7 +121,6 @@ class Suite:
 
 
 class Test:
-
     # An single instance of this class is passed to the setup, test, and
     # teardown functions.  This allows information to be passed between the
     # different components of the test.
@@ -151,29 +183,26 @@ class Runner:
         self.format = '(%d/%d)'
         self.status = ''
 
-    # }}}1
+    def run(self, *suites):
+        for suite in suites:
+            self.successes = 0
+            self.failures = 0
+            self.test = 0
 
-    # Testing Methods {{{1
-    def run(self, suite):
-        # Get ready.
-        self.successes = 0
-        self.failures = 0
-        self.test = 0
+            self.first_failure = None
 
-        self.first_failure = None
+            self.tests = suite.get_tests()
+            self.title = suite.get_title() + ' '
 
-        self.tests = suite.get_tests()
-        self.title = suite.get_title() + ' '
+            self.write_header()
+            self.write_progress()
 
-        self.write_header()
-        self.write_progress()
+            # Run the tests.
+            suite.run(self.update)
 
-        # Run the tests.
-        suite.run(self.update)
-
-        # Show the results.
-        self.write_progress()
-        self.write_debug_info()
+            # Show the results.
+            self.write_progress()
+            self.write_debug_info()
 
     def update(self, result):
         # Analyze the result.
@@ -198,6 +227,8 @@ class Runner:
         status = '(%d/%d)' % (self.test, self.tests)
 
         cursor.restore()
+        cursor.clear_eol()
+
         cursor.write_color(status, color, "bold")
 
     def write_debug_info(self):
@@ -209,7 +240,7 @@ class Runner:
         else:
             print; print
 
-            header = "'%s' Debugging Information:" % failure.name
+            header = "Test failed: %s" % failure.name
             print cursor.color(header, "red", "bold")
 
             print failure.output
@@ -232,26 +263,14 @@ teardown = global_suite.teardown
 title = global_suite.set_title
 
 def run(*suites):
-    if not suites:
-        suites = [global_suite]
-
-    for suite in suites:
-        if not suite.get_tests():
-            message = text.wrap(
-                    "\nThe '%s' suite does not have any " % suite.get_title(),
-                    "tests to run. If you are using your own test suite, ",
-                    "you can get this error by forgetting to pass it into ",
-                    "the run() function.")
-
-            raise ValueError(message)
-
-        global_runner.run(suite)
+    if not suites: suites = [global_suite]
+    return global_runner.run(*suites)
 
 
 if __name__ == "__main__":
 
-    # This is primarily a test of the framework, but it also shows the framework 
-    # can be used to run simple tests.
+    # This is primarily a test of the framework, but it also shows how the 
+    # framework can be used to run simple tests.
 
     import time
 
