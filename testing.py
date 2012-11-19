@@ -5,11 +5,10 @@ from string import capwords
 
 import utilities.cursor as cursor
 import utilities.muffler as muffler
-import utilities.string as string
+import utilities.text as text
 
 class Suite:
 
-    # Constructor and Iterator {{{1
     def __init__(self, title, stop_on_error=False):
         self.tests = []
         self.results = []
@@ -26,31 +25,7 @@ class Suite:
         assert self.finished
         return iter(self.results)
 
-    # Attributes {{{1
-    def is_finished(self):
-        return self.finished
 
-    def get_tests(self):
-        return len(self.tests)
-
-    def get_title(self):
-        return self.title
-
-    def set_title(self, title):
-        self.title = title
-
-    def get_results(self):
-        return self.results
-
-    def get_setup(self):
-        return self.setup_action
-
-    def get_teardown(self):
-        return self.teardown_action
-
-    # }}}1
-
-    # Run Method {{{1
     def run(self, callback=lambda result: None):
         results = []
 
@@ -64,7 +39,6 @@ class Suite:
 
         self.finished = True
 
-    # Decorator Methods {{{1
     def setup(self, function):
         self.setup_action = self.check_arguments(function)
         return function
@@ -90,11 +64,30 @@ class Suite:
 
         return function
 
-    # }}}1
+
+    def is_finished(self):
+        return self.finished
+
+    def get_tests(self):
+        return len(self.tests)
+
+    def get_title(self):
+        return self.title
+
+    def set_title(self, title):
+        self.title = title
+
+    def get_results(self):
+        return self.results
+
+    def get_setup(self):
+        return self.setup_action
+
+    def get_teardown(self):
+        return self.teardown_action
+
 
 class Test:
-
-    # Helper Class {{{1
 
     # An single instance of this class is passed to the setup, test, and
     # teardown functions.  This allows information to be passed between the
@@ -103,7 +96,6 @@ class Test:
     class Helper:
         pass
 
-    # Result Classes {{{1
     class Result:
 
         def __init__(self, test, success, output, traceback):
@@ -125,9 +117,7 @@ class Test:
         def __init__(self, test, output, exception):
             Test.Result.__init__(self, test, False, output, exception)
 
-    # }}}1
 
-    # Constructor {{{1
     def __init__(self, suite, function):
         self.function = function
         self.helper = Test.Helper()
@@ -141,8 +131,6 @@ class Test:
         
         self.name = capwords(function.__name__.replace('_', ' '))
 
-
-    # Run Method {{{1
     def run(self):
         with muffler.Muffler() as output:
             try:
@@ -156,11 +144,9 @@ class Test:
             else:
                 return Test.Success(self, output)
 
-    # }}}1
 
 class Runner:
 
-    # Constructor {{{1
     def __init__(self):
         self.format = '(%d/%d)'
         self.status = ''
@@ -169,7 +155,6 @@ class Runner:
 
     # Testing Methods {{{1
     def run(self, suite):
-
         # Get ready.
         self.successes = 0
         self.failures = 0
@@ -191,7 +176,6 @@ class Runner:
         self.write_debug_info()
 
     def update(self, result):
-
         # Analyze the result.
         if result: self.successes += 1
         if not result: self.failures += 1
@@ -204,7 +188,6 @@ class Runner:
         # Display the result.
         self.write_progress()
 
-    # Drawing Methods {{{1
 
     def write_header(self):
         cursor.write(self.title)
@@ -218,11 +201,10 @@ class Runner:
         cursor.write_color(status, color, "bold")
 
     def write_debug_info(self):
-
         failure = self.first_failure
 
         if failure is None:
-            print; return
+            print
 
         else:
             print; print
@@ -234,9 +216,11 @@ class Runner:
             print failure.traceback
 
 
-    # }}}1
 
+# Global Variables (fold)
+# ================
 # These global variables provide an easy way to use this testing framework.
+
 default_title = "Running all tests..."
 
 global_suite = Suite(default_title)
@@ -247,26 +231,27 @@ setup = global_suite.setup
 teardown = global_suite.teardown
 title = global_suite.set_title
 
-# Global Runner Function {{{1
-def run(suite=global_suite):
+def run(*suites):
+    if not suites:
+        suites = [global_suite]
 
-    if not suite.get_tests():
+    for suite in suites:
+        if not suite.get_tests():
+            message = text.wrap(
+                    "\nThe '%s' suite does not have any " % suite.get_title(),
+                    "tests to run. If you are using your own test suite, ",
+                    "you can get this error by forgetting to pass it into ",
+                    "the run() function.")
 
-        message = string.wrap(
-                "The given test suite does not have any tests to run.  ",
-                "If you are using your own test suites, you can get this ",
-                "error by forgetting to pass them into the run() function.")
+            raise ValueError(message)
 
-        raise ValueError(message)
+        global_runner.run(suite)
 
-    return global_runner.run(suite)
-
-# }}}1
 
 if __name__ == "__main__":
 
-    # This is primarily a test of the framework, but it also shows how to use
-    # it to run simple tests.
+    # This is primarily a test of the framework, but it also shows the framework 
+    # can be used to run simple tests.
 
     import time
 
@@ -295,6 +280,7 @@ if __name__ == "__main__":
     @test
     def test_3(helper):
         time.sleep(1); print 'Debugging output for 3.'; raise ZeroDivisionError
+
 
     # Once all of the tests have been specified, they can be executed using the
     # run() function.  The title() function can be optionally used to control
