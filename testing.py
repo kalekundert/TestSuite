@@ -32,7 +32,7 @@ import utilities.text as text
 
 class Suite:
 
-    def __init__(self, title, stop_on_error=False):
+    def __init__(self, title, stop_on_error=True):
         self.tests = []
         self.results = []
 
