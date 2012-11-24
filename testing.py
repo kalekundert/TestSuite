@@ -246,6 +246,8 @@ class Runner:
             print failure.output
             print failure.traceback
 
+            raise SystemExit(1)
+
 
 
 # Global Variables (fold)
