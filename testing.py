@@ -7,102 +7,80 @@ import utilities.cursor as cursor
 import utilities.muffler as muffler
 import utilities.text as text
 
-# Skip Decorator
-# ==============
-# Having the ability to skip tests would be useful.  A good way to do this
-# would be to add a skip decorator.  The suite would keep track of the tests
-# that are being skipped, and the final status would be displayed in yellow
-# rather than green.
-#
-# A related problem is preventing users from simply removing the test
-# decorator.  This is a bad practice, because it's very easy to forget to add
-# the test back later.  To address this, I should allow users to specify
-# exactly how many tests there are.
-#
-# If there aren't the right number of tests, or if there are no tests, the
-# suite will fail.  
-
-# Stop on Failure
-# ===============
-# Since this framework only reports the results of the first failed test, there
-# isn't any point running additional tests after a failure.  This is especially
-# annoying when all of the tests are stuck in infinite loops, because you have
-# to press ^C several times to get back to the terminal, and when the tests are
-# expensive and run slowly.
-
 class Suite:
 
-    def __init__(self, title, stop_on_error=False):
-        self.tests = []
-        self.results = []
+    class NullHelper:
+        """ An single instance of this class is passed to the setup, test, and
+        teardown functions.  This allows information to be passed between the
+        different components of the test. """
+        pass
 
+
+    def __init__(self, title, stop_on_error=True):
         self.title = title
         self.finished = False
-
-        self.setup_action = lambda helper: None
-        self.teardown_action = lambda helper: None
-
         self.stop_on_error = stop_on_error
+
+        self._tests = []
+        self._skips = []
+        self._results = []
+
+        self._setup = Function.null()
+        self._teardown = Function.null()
+        self._helper = Helper.null()
 
     def __iter__(self):
         assert self.finished
-        return iter(self.results)
+        return iter(self._results)
 
 
     def run(self, callback=lambda result: None):
         results = []
 
         # Complain if there are no tests to run.
-        if not self.tests:
+        if not self._tests:
             message = text.wrap(
-                    "\nThe '%s' suite does not have any " % suite.get_title(),
+                    "\nThe '%s' suite does not have any " % suite.title,
                     "tests to run. If you are using your own test suite, ",
                     "you can get this error by forgetting to pass it into ",
                     "the run() function.")
             raise ValueError(message)
 
         # Run the tests.
-        for test in self.tests:
-            result = test.run()
-            callback(result)
-            self.results.append(result)
+        for test in self._tests:
+            result = test.run(); callback(result)
+            self._results.append(result)
 
             if not result and self.stop_on_error:
                 break
 
         self.finished = True
 
-    def setup(self, function):
-        self.setup_action = self.check_arguments(function)
-        return function
-
     def test(self, function):
         test = Test(self, function)
-        function = self.check_arguments(function)
+        self._tests.append(test)
+        return function
 
-        self.tests.append(test)
+    def skip(self, function):
+        skip = Function(function, role='skipped')
+        self._skips.append(skip)
+        return function
+
+    def setup(self, function):
+        self._setup = Function(function, role='setup')
         return function
 
     def teardown(self, function):
-        self.teardown_action = self.check_arguments(function)
+        self._teardown = Function(function, role='teardown')
         return function
 
-    def check_arguments(self, function):
-        name = function.__name__
-        signature = inspect.getargspec(function)
-        message = "Test function %s() must accept exactly 1 argument."
-
-        if len(signature.args) != 1:
-            raise TypeError(message % name)
-
-        return function
+    def helper(self, cls):
+        self._helper = Helper(cls)
+        return cls
 
 
     def is_finished(self):
         return self.finished
-
-    def get_tests(self):
-        return len(self.tests)
 
     def get_title(self):
         return self.title
@@ -110,29 +88,32 @@ class Suite:
     def set_title(self, title):
         self.title = title
 
+    def get_num_tests(self):
+        return len(self._tests)
+
+    def get_num_skips(self):
+        return len(self._skips)
+
     def get_results(self):
-        return self.results
+        return self._results
 
     def get_setup(self):
-        return self.setup_action
+        return self._setup
 
     def get_teardown(self):
-        return self.teardown_action
+        return self._teardown
+
+    def get_helper(self):
+        return self._helper.instantiate()
 
 
 class Test:
-    # An single instance of this class is passed to the setup, test, and
-    # teardown functions.  This allows information to be passed between the
-    # different components of the test.
     
-    class Helper:
-        pass
-
     class Result:
 
         def __init__(self, test, success, output, traceback):
             self.test = test
-            self.name = test.name
+            self.title = test.title
 
             self.success = success
             self.output = output
@@ -151,28 +132,23 @@ class Test:
 
 
     def __init__(self, suite, function):
-        self.function = function
-        self.helper = Test.Helper()
-
-        self.setup = suite.get_setup()
-        self.teardown = suite.get_teardown()
-
-        # This gross line tries to guess a reasonable name for the test by
-        # starting with the name of the given function, converting any
-        # underscores into spaces, and capitalizing each word.
-        
-        self.name = capwords(function.__name__.replace('_', ' '))
+        self.suite = suite
+        self.function = Function(function, role='test')
+        self.title = capwords(self.function.name.replace('_', ' '))
 
     def run(self):
+        setup = self.suite.get_setup()
+        function = self.function
+        teardown = self.suite.get_teardown()
+        helper = self.suite.get_helper()
+
         with muffler.Muffler() as output:
             try:
-                self.setup(self.helper)
-                self.function(self.helper)
-                self.teardown(self.helper)
-
+                setup(helper)
+                function(helper)
+                teardown(helper)
             except:
                 return Test.Failure(self, output, traceback.format_exc())
-
             else:
                 return Test.Success(self, output)
 
@@ -191,8 +167,9 @@ class Runner:
 
             self.first_failure = None
 
-            self.tests = suite.get_tests()
             self.title = suite.get_title() + ' '
+            self.num_tests = suite.get_num_tests()
+            self.num_skips = suite.get_num_skips()
 
             self.write_header()
             self.write_progress()
@@ -224,7 +201,7 @@ class Runner:
 
     def write_progress(self):
         color = "red" if self.failures else "green"
-        status = '(%d/%d)' % (self.test, self.tests)
+        status = '(%d/%d)' % (self.test, self.num_tests)
 
         cursor.restore()
         cursor.clear_eol()
@@ -232,19 +209,69 @@ class Runner:
         cursor.write_color(status, color, "bold")
 
     def write_debug_info(self):
-        failure = self.first_failure
+        print
 
-        if failure is None:
+        if self.num_skips:
+            message = "Skipped %d %s."
+            arguments = self.num_skips, text.plural(self.num_skips, "test")
+            print cursor.color(message % arguments, "white")
+
+        if self.failures:
             print
 
-        else:
-            print; print
-
-            header = "Test failed: %s" % failure.name
+            failure = self.first_failure
+            header = "Test failed: %s" % failure.title
             print cursor.color(header, "red", "bold")
 
             print failure.output
             print failure.traceback
+
+
+
+class Function:
+
+    def __init__(self, function, role):
+        self.function = function
+        self.name = function.__name__
+        self.role = role
+
+        arguments = inspect.getargspec(function)[0]
+        num_arguments = len(arguments)
+
+        if num_arguments == 0:
+            self.use_helper = False
+        elif num_arguments == 1:
+            self.use_helper = True
+        else:
+            message = "%s function %s() must accept either 0 or 1 arguments."
+            arguments = self.role.title(), self.name
+            raise ValueError(message % arguments)
+
+    def __call__(self, helper):
+        return self.function(helper) if self.use_helper else self.function()
+
+    @staticmethod
+    def null():
+        return Function(lambda: None, 'null')
+
+
+class Helper:
+
+    def __init__(self, cls=None):
+        self.cls = cls
+        self.name = cls.__name__
+
+    def instantiate(self):
+        try:
+            return self.cls()
+        except:
+            message = "Unable to instantiate a %s() helper." % self.name
+            raise ValueError(message)
+
+    @staticmethod
+    def null():
+        class BlankObject (object): pass
+        return Helper(BlankObject)
 
 
 
@@ -258,8 +285,10 @@ global_suite = Suite(default_title)
 global_runner = Runner()
 
 test = global_suite.test
+skip = global_suite.skip
 setup = global_suite.setup
 teardown = global_suite.teardown
+helper = global_suite.helper
 title = global_suite.set_title
 
 def run(*suites):
@@ -298,7 +327,11 @@ if __name__ == "__main__":
 
     @test
     def test_3(helper):
-        time.sleep(1); print 'Debugging output for 3.'; raise ZeroDivisionError
+        time.sleep(1); print 'Debugging output for 3.'; #raise ZeroDivisionError
+
+    @skip
+    def skip_4(helper):
+        time.sleep(1); print 'Debugging output for 4.'; raise AssertionError
 
 
     # Once all of the tests have been specified, they can be executed using the
