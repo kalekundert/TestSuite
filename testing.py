@@ -9,13 +9,6 @@ import utilities.text as text
 
 class Suite:
 
-    class NullHelper:
-        """ An single instance of this class is passed to the setup, test, and
-        teardown functions.  This allows information to be passed between the
-        different components of the test. """
-        pass
-
-
     def __init__(self, title, stop_on_error=True):
         self.title = title
         self.finished = False
@@ -25,9 +18,9 @@ class Suite:
         self._skips = []
         self._results = []
 
-        self._setup = Function.null()
-        self._teardown = Function.null()
-        self._helper = Helper.null()
+        self._setup = _Function.null()
+        self._teardown = _Function.null()
+        self._helper = _Helper.null()
 
     def __iter__(self):
         assert self.finished
@@ -62,20 +55,20 @@ class Suite:
         return function
 
     def skip(self, function):
-        skip = Function(function, role='skipped')
+        skip = _Function(function, role='skipped')
         self._skips.append(skip)
         return function
 
     def setup(self, function):
-        self._setup = Function(function, role='setup')
+        self._setup = _Function(function, role='setup')
         return function
 
     def teardown(self, function):
-        self._teardown = Function(function, role='teardown')
+        self._teardown = _Function(function, role='teardown')
         return function
 
     def helper(self, cls):
-        self._helper = Helper(cls)
+        self._helper = _Helper(cls)
         return cls
 
 
@@ -133,7 +126,7 @@ class Test:
 
     def __init__(self, suite, function):
         self.suite = suite
-        self.function = Function(function, role='test')
+        self.function = _Function(function, role='test')
         self.title = capwords(self.function.name.replace('_', ' '))
 
     def run(self):
@@ -226,9 +219,11 @@ class Runner:
             print failure.output
             print failure.traceback
 
+            raise SystemExit(1)
 
 
-class Function:
+
+class _Function:
 
     def __init__(self, function, role):
         self.function = function
@@ -252,10 +247,10 @@ class Function:
 
     @staticmethod
     def null():
-        return Function(lambda: None, 'null')
+        return _Function(lambda: None, 'null')
 
 
-class Helper:
+class _Helper:
 
     def __init__(self, cls=None):
         self.cls = cls
@@ -271,7 +266,7 @@ class Helper:
     @staticmethod
     def null():
         class BlankObject (object): pass
-        return Helper(BlankObject)
+        return _Helper(BlankObject)
 
 
 
@@ -314,7 +309,7 @@ if __name__ == "__main__":
         print "Setting up the test."
 
     @teardown
-    def test_teardown(helper):
+    def test_teardown():
         print "Tearing down the test."
 
     @test
@@ -322,7 +317,7 @@ if __name__ == "__main__":
         time.sleep(1); print 'Debugging output for 1.'
 
     @test
-    def test_2(helper):
+    def test_2():
         time.sleep(1); print 'Debugging output for 2.'; raise AssertionError
 
     @test
@@ -330,8 +325,12 @@ if __name__ == "__main__":
         time.sleep(1); print 'Debugging output for 3.'; #raise ZeroDivisionError
 
     @skip
-    def skip_4(helper):
-        time.sleep(1); print 'Debugging output for 4.'; raise AssertionError
+    def skip_4():
+        time.sleep(1); print 'Debugging output for 4.'
+
+    @skip
+    def skip_5(helper):
+        time.sleep(3); print 'Debugging output for 4.'; raise AssertionError
 
 
     # Once all of the tests have been specified, they can be executed using the
