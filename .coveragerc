@@ -1,0 +1,9 @@
+# coverage run ./tests.py
+# coverage html
+
+[run]
+branch = True
+include = framework.py
+
+[html]
+directory = coverage

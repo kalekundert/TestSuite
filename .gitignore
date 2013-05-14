@@ -1,2 +1,5 @@
 *.pyc
 .*.sw*
+.coverage
+coverage
+

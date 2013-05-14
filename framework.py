@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, inspect, traceback
+import inspect, traceback
 from string import capwords
 
 import utilities.cursor as cursor
@@ -33,7 +33,7 @@ class Suite:
         # Complain if there are no tests to run.
         if not self._tests:
             message = text.wrap(
-                    "\nThe '%s' suite does not have any " % suite.title,
+                    "\nThe '%s' suite does not have any " % self.title,
                     "tests to run. If you are using your own test suite, ",
                     "you can get this error by forgetting to pass it into ",
                     "the run() function.")
@@ -219,8 +219,6 @@ class Runner:
             print failure.output
             print failure.traceback
 
-            raise SystemExit(1)
-
 
 
 class _Function:
@@ -289,54 +287,4 @@ title = global_suite.set_title
 def run(*suites):
     if not suites: suites = [global_suite]
     return global_runner.run(*suites)
-
-
-if __name__ == "__main__":
-
-    # This is primarily a test of the framework, but it also shows how the 
-    # framework can be used to run simple tests.
-
-    import time
-
-    # Test functions can be easily specified using decorators.  There are three
-    # different decorators available to use: @test, @setup, and @teardown.
-    # The first specifies a function that contains testing code.  The second
-    # and third specify functions to call before and after every individual
-    # test.
-
-    @setup
-    def test_setup(helper):
-        print "Setting up the test."
-
-    @teardown
-    def test_teardown():
-        print "Tearing down the test."
-
-    @test
-    def test_1(helper):
-        time.sleep(1); print 'Debugging output for 1.'
-
-    @test
-    def test_2():
-        time.sleep(1); print 'Debugging output for 2.'; raise AssertionError
-
-    @test
-    def test_3(helper):
-        time.sleep(1); print 'Debugging output for 3.'; #raise ZeroDivisionError
-
-    @skip
-    def skip_4():
-        time.sleep(1); print 'Debugging output for 4.'
-
-    @skip
-    def skip_5(helper):
-        time.sleep(3); print 'Debugging output for 4.'; raise AssertionError
-
-
-    # Once all of the tests have been specified, they can be executed using the
-    # run() function.  The title() function can be optionally used to control
-    # the title used in the output.
-
-    title("Testing the tests...")
-    run()
 
