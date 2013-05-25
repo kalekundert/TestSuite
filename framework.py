@@ -221,6 +221,21 @@ class Runner:
 
 
 
+class ExpectError (object):
+
+    def __init__(self, exception):
+        self.exception = exception
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        message = "Expected %s, but got %s." % (self.exception.__name__, type)
+        assert type == self.exception, message
+        return True
+
+
+
 class _Function:
 
     def __init__(self, function, role):
@@ -284,7 +299,10 @@ teardown = global_suite.teardown
 helper = global_suite.helper
 title = global_suite.set_title
 
+expect = ExpectError
+
 def run(*suites):
     if not suites: suites = [global_suite]
     return global_runner.run(*suites)
+
 

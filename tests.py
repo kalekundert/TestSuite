@@ -94,6 +94,24 @@ def suite_api_test():
         pass
 
 @testing.test
+def expected_error_test():
+    with testing.expect(ZeroDivisionError):
+        raise ZeroDivisionError
+
+    with testing.expect(OverflowError):
+        raise OverflowError
+
+    with testing.expect(AssertionError):
+        with testing.expect(ValueError):
+            pass
+
+    with testing.expect(AssertionError):
+        with testing.expect(AttributeError):
+            raise KeyError
+
+
+
+@testing.test
 def successful_test():
     suite = testing.Suite("Testing for success...")
 
@@ -197,22 +215,18 @@ def broken_user_input_test():
     runner = testing.Runner()
 
     # Make sure an exception is thrown if no tests are added to the suite.
-    try: runner.run(suite)
-    except ValueError: print
-    else: raise AssertionError
+    with testing.expect(ValueError):
+        runner.run(suite)
 
     # Make sure only functions with one or two arguments can be used as tests.
-    try: suite.test(illegal_test_function)
-    except ValueError: print
-    else: raise AssertionError
+    with testing.expect(ValueError):
+        suite.test(illegal_test_function)
 
     # Make sure an exception is thrown if a helper can't be instantiated.
-    try:
+    with testing.expect(ValueError):
         suite.helper(IllegalCustomHelper)
         suite.test(print_status)
         runner.run(suite)
-    except ValueError: pass
-    else: raise AssertionError
 
 
 testing.title("Testing the tests...")
