@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+from __future__ import unicode_literals
+
 # Note that this script uses the code being tested to perform the tests.  This 
 # self-referential nature might make this code a hard to understand for someone 
 # who isn't already familiar with the testing framework.  Look in the demo 
@@ -12,36 +15,36 @@ import utilities.muffler as muffler
 # Helper Functions
 
 def print_status():
-    print "Successful test executed."
+    print("Successful test executed.")
 
 def print_status_with_helper(helper):
-    print helper.state
-    print "Successful test executed."
+    print(helper.state)
+    print("Successful test executed.")
 
 def raise_exception():
-    print "Unsuccessful test executed."
+    print("Unsuccessful test executed.")
     raise ZeroDivisionError
 
 def raise_exception_with_helper(helper):
-    print helper.state
-    print "Unsuccessful test executed."
+    print(helper.state)
+    print("Unsuccessful test executed.")
 
 def setup_globally():
-    print "Setting up globally."
+    print("Setting up globally.")
 
 def setup_with_helper(helper):
-    print "Setting up a helper object."
+    print("Setting up a helper object.")
     helper.state = "Using a helper object."
 
 def teardown_globally():
-    print "Tearing down globally."
+    print("Tearing down globally.")
 
 def teardown_with_helper(helper):
-    print "Tearing down a helper object."
+    print("Tearing down a helper object.")
     del helper.state
 
 def illegal_test_function(first, second):
-    print "Not a valid test function."
+    print("Not a valid test function.")
 
 
 class CustomHelper:
@@ -62,7 +65,7 @@ def run_suite(suite):
     transcript = str(transcript).strip()
     transcript = text.indent(transcript, '> ')
 
-    print transcript
+    print(transcript)
     return transcript
 
 
@@ -81,7 +84,7 @@ def suite_api_test():
 
     transcript = run_suite(suite)
 
-    print suite.get_results()
+    print(suite.get_results())
 
     assert suite.is_finished()
     assert suite.get_title() == "Testing the API..."
@@ -108,8 +111,6 @@ def expected_error_test():
     with testing.expect(AssertionError):
         with testing.expect(AttributeError):
             raise KeyError
-
-
 
 @testing.test
 def successful_test():

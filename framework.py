@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import inspect, traceback
 from string import capwords
+from contextlib import contextmanager
 
 import utilities.cursor as cursor
 import utilities.muffler as muffler
@@ -202,37 +206,22 @@ class Runner:
         cursor.write_color(status, color, "bold")
 
     def write_debug_info(self):
-        print
+        print()
 
         if self.num_skips:
             message = "Skipped %d %s."
             arguments = self.num_skips, text.plural(self.num_skips, "test")
-            print cursor.color(message % arguments, "white")
+            print(cursor.color(message % arguments, "white"))
 
         if self.failures:
-            print
+            print()
 
             failure = self.first_failure
             header = "Test failed: %s" % failure.title
-            print cursor.color(header, "red", "bold")
+            print(cursor.color(header, "red", "bold"))
 
-            print failure.output
-            print failure.traceback
-
-
-
-class ExpectError (object):
-
-    def __init__(self, exception):
-        self.exception = exception
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, type, value, traceback):
-        message = "Expected %s, but got %s." % (self.exception.__name__, type)
-        assert type == self.exception, message
-        return True
+            print(failure.output)
+            print(failure.traceback)
 
 
 
@@ -299,10 +288,19 @@ teardown = global_suite.teardown
 helper = global_suite.helper
 title = global_suite.set_title
 
-expect = ExpectError
 
 def run(*suites):
     if not suites: suites = [global_suite]
     return global_runner.run(*suites)
+
+@contextmanager
+def expect(exception):
+    try:
+        yield
+    except exception:
+        pass
+    except:
+        raise AssertionError(
+                "Unknown exception '{}' raised.".format(exception))
 
 
