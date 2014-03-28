@@ -1,15 +1,19 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
+# Imports (fold)
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import inspect, traceback
+import inspect
+import traceback
+
 from string import capwords
 from contextlib import contextmanager
 
 import utilities.cursor as cursor
 import utilities.muffler as muffler
 import utilities.text as text
+
 
 class Suite:
 
@@ -21,6 +25,7 @@ class Suite:
         self._tests = []
         self._skips = []
         self._results = []
+        self._focus = []
 
         self._setup = _Function.null()
         self._teardown = _Function.null()
@@ -44,7 +49,7 @@ class Suite:
             raise ValueError(message)
 
         # Run the tests.
-        for test in self._tests:
+        for test in self._focus or self._tests:
             result = test.run(); callback(result)
             self._results.append(result)
 
@@ -71,6 +76,11 @@ class Suite:
         self._teardown = _Function(function, role='teardown')
         return function
 
+    def focus(self, function):
+        test = Test(self, function)
+        self._focus.append(test)
+        return function
+
     def helper(self, cls):
         self._helper = _Helper(cls)
         return cls
@@ -86,10 +96,16 @@ class Suite:
         self.title = title
 
     def get_num_tests(self):
-        return len(self._tests)
+        if self._focus:
+            return len(self._focus)
+        else:
+            return len(self._tests)
 
     def get_num_skips(self):
-        return len(self._skips)
+        if self._focus:
+            return len(self._skips) + len(self._tests)
+        else:
+            return len(self._skips)
 
     def get_results(self):
         return self._results
@@ -116,8 +132,10 @@ class Test:
             self.output = output
             self.traceback = traceback
 
-        def __nonzero__(self):
+        def __bool__(self):
             return self.success
+
+        __nonzero__ = __bool__
 
     class Success(Result):
         def __init__(self, test, output):
@@ -210,15 +228,15 @@ class Runner:
 
         if self.num_skips:
             message = "Skipped %d %s."
-            arguments = self.num_skips, text.plural(self.num_skips, "test")
-            print(cursor.color(message % arguments, "white"))
+            arguments = self.num_skips, text.plural(self.num_skips, 'test')
+            print(cursor.color(message % arguments, 'white'))
 
         if self.failures:
             print()
 
             failure = self.first_failure
             header = "Test failed: %s" % failure.title
-            print(cursor.color(header, "red", "bold"))
+            print(cursor.color(header, 'red', 'bold'))
 
             print(failure.output)
             print(failure.traceback)
@@ -285,6 +303,7 @@ test = global_suite.test
 skip = global_suite.skip
 setup = global_suite.setup
 teardown = global_suite.teardown
+focus = global_suite.focus
 helper = global_suite.helper
 title = global_suite.set_title
 
