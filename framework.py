@@ -319,7 +319,8 @@ def expect(exception):
     except exception:
         pass
     except:
-        raise AssertionError(
-                "Unknown exception '{}' raised.".format(exception))
+        raise AssertionError("Unknown exception raised.")
+    else:
+        raise AssertionError("No exception raised.")
 
 
