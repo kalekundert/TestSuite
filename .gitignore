@@ -1,5 +1,4 @@
 *.pyc
 .*.sw*
-.coverage
-coverage
+*.egg-info
 

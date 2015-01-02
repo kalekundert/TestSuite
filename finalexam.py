@@ -1,19 +1,11 @@
 #!/usr/bin/env python3
 
-# Imports (fold)
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import inspect
-import traceback
-
+import inspect, traceback, nonstdlib
 from string import capwords
 from contextlib import contextmanager
-
-import utilities.cursor as cursor
-import utilities.muffler as muffler
-import utilities.text as text
-
 
 class Suite:
 
@@ -41,7 +33,7 @@ class Suite:
 
         # Complain if there are no tests to run.
         if not self._tests:
-            message = text.wrap(
+            message = nonstdlib.wrap(
                     "\nThe '%s' suite does not have any " % self.title,
                     "tests to run. If you are using your own test suite, ",
                     "you can get this error by forgetting to pass it into ",
@@ -157,7 +149,7 @@ class Test:
         teardown = self.suite.get_teardown()
         helper = self.suite.get_helper()
 
-        with muffler.Muffler() as output:
+        with nonstdlib.Muffler() as output:
             try:
                 setup(helper)
                 function(helper)
@@ -211,32 +203,32 @@ class Runner:
 
 
     def write_header(self):
-        cursor.write(self.title)
-        cursor.save()
+        nonstdlib.write(self.title)
+        nonstdlib.save_cursor()
 
     def write_progress(self):
         color = "red" if self.failures else "green"
         status = '(%d/%d)' % (self.test, self.num_tests)
 
-        cursor.restore()
-        cursor.clear_eol()
+        nonstdlib.restore_cursor()
+        nonstdlib.clear_eol()
 
-        cursor.write_color(status, color, "bold")
+        nonstdlib.write_color(status, color, "bold")
 
     def write_debug_info(self):
         print()
 
         if self.num_skips:
             message = "Skipped %d %s."
-            arguments = self.num_skips, text.plural(self.num_skips, 'test')
-            print(cursor.color(message % arguments, 'white'))
+            arguments = self.num_skips, nonstdlib.plural(self.num_skips, 'test')
+            print(nonstdlib.color(message % arguments, 'white'))
 
         if self.failures:
             print()
 
             failure = self.first_failure
             header = "Test failed: %s" % failure.title
-            print(cursor.color(header, 'red', 'bold'))
+            print(nonstdlib.color(header, 'red', 'bold'))
 
             print(failure.output)
             print(failure.traceback)
@@ -290,8 +282,7 @@ class _Helper:
 
 
 
-# Global Variables (fold)
-# ================
+## Global Variables
 # These global variables provide an easy way to use this testing framework.
 
 default_title = "Running all tests..."
@@ -319,7 +310,7 @@ def expect(exception):
     except exception:
         pass
     except:
-        raise AssertionError("Unknown exception raised.")
+        raise
     else:
         raise AssertionError("No exception raised.")
 

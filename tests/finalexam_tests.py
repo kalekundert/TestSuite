@@ -5,12 +5,11 @@ from __future__ import unicode_literals
 
 # Note that this script uses the code being tested to perform the tests.  This 
 # self-referential nature might make this code a hard to understand for someone 
-# who isn't already familiar with the testing framework.  Look in the demo 
-# script to see a better real-world demonstration of the testing framework.
+# who isn't already familiar with the testing framework.  Find the demo script 
+# in the docs directory to see a better real-world demonstration of the testing 
+# framework.
 
-import testing
-import utilities.text as text
-import utilities.muffler as muffler
+import sys, finalexam, nonstdlib
 
 # Helper Functions
 
@@ -57,13 +56,13 @@ class IllegalCustomHelper:
 
 
 def run_suite(suite):
-    runner = testing.Runner()
+    runner = finalexam.Runner()
 
-    with muffler.Muffler() as transcript:
+    with nonstdlib.Muffler() as transcript:
         runner.run(suite)
 
     transcript = str(transcript).strip()
-    transcript = text.indent(transcript, '> ')
+    transcript = nonstdlib.indent(transcript, '> ')
 
     print(transcript)
     return transcript
@@ -71,9 +70,9 @@ def run_suite(suite):
 
 # Test Functions
 
-@testing.test
+@finalexam.test
 def suite_api_test():
-    suite = testing.Suite("Testing the API...")
+    suite = finalexam.Suite("Testing the API...")
 
     assert not suite.is_finished()
 
@@ -96,25 +95,25 @@ def suite_api_test():
     for result in suite:
         pass
 
-@testing.test
+@finalexam.test
 def expected_error_test():
-    with testing.expect(ZeroDivisionError):
+    with finalexam.expect(ZeroDivisionError):
         raise ZeroDivisionError
 
-    with testing.expect(OverflowError):
+    with finalexam.expect(OverflowError):
         raise OverflowError
 
-    with testing.expect(AssertionError):
-        with testing.expect(ValueError):
+    with finalexam.expect(AssertionError):
+        with finalexam.expect(ValueError):
             pass
 
-    with testing.expect(AssertionError):
-        with testing.expect(AttributeError):
+    with finalexam.expect(KeyError):
+        with finalexam.expect(AttributeError):
             raise KeyError
 
-@testing.test
+@finalexam.test
 def successful_test():
-    suite = testing.Suite("Testing for success...")
+    suite = finalexam.Suite("Testing for success...")
 
     suite.setup(setup_globally)
     suite.test(print_status)
@@ -131,9 +130,9 @@ def successful_test():
     assert "Tearing down globally." not in transcript
     assert "Skipped" not in transcript
 
-@testing.test
+@finalexam.test
 def successful_test_with_helper():
-    suite = testing.Suite("Testing for success with helper...")
+    suite = finalexam.Suite("Testing for success with helper...")
 
     suite.setup(setup_with_helper)
     suite.test(print_status_with_helper)
@@ -151,9 +150,9 @@ def successful_test_with_helper():
     assert "Tearing down a helper object." not in transcript
     assert "Skipped" not in transcript
 
-@testing.test
+@finalexam.test
 def failed_test():
-    suite = testing.Suite("Testing for failure...")
+    suite = finalexam.Suite("Testing for failure...")
 
     suite.setup(setup_globally)
     suite.test(print_status)
@@ -171,9 +170,9 @@ def failed_test():
     assert "Tearing down globally." not in transcript
     assert "Skipped" not in transcript
 
-@testing.test
+@finalexam.test
 def failed_test_with_helper():
-    suite = testing.Suite("Testing for failure with helper...")
+    suite = finalexam.Suite("Testing for failure with helper...")
 
     suite.setup(setup_with_helper)
     suite.test(print_status_with_helper)
@@ -191,9 +190,9 @@ def failed_test_with_helper():
     assert "Tearing down a helper object." not in transcript
     assert "Skipped" not in transcript
 
-@testing.skip
+@finalexam.skip
 def custom_helper_test():
-    suite = testing.Suite("Testing for success with custom helper...")
+    suite = finalexam.Suite("Testing for success with custom helper...")
 
     suite.helper(CustomHelper)
     suite.test(print_status_with_helper)
@@ -210,26 +209,26 @@ def custom_helper_test():
     assert "Tearing down a helper object." not in transcript
     assert "Skipped" not in transcript
 
-@testing.test
+@finalexam.test
 def broken_user_input_test():
-    suite = testing.Suite("Testing broken user input...")
-    runner = testing.Runner()
+    suite = finalexam.Suite("Testing broken user input...")
+    runner = finalexam.Runner()
 
     # Make sure an exception is thrown if no tests are added to the suite.
-    with testing.expect(ValueError):
+    with finalexam.expect(ValueError):
         runner.run(suite)
 
     # Make sure only functions with one or two arguments can be used as tests.
-    with testing.expect(ValueError):
+    with finalexam.expect(ValueError):
         suite.test(illegal_test_function)
 
     # Make sure an exception is thrown if a helper can't be instantiated.
-    with testing.expect(ValueError):
+    with finalexam.expect(ValueError):
         suite.helper(IllegalCustomHelper)
         suite.test(print_status)
         runner.run(suite)
 
 
-testing.title("Testing the tests...")
-testing.run()
+finalexam.title("Testing finalexam with python{}.{}".format(*sys.version_info))
+finalexam.run()
 
