@@ -3,7 +3,7 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import inspect, traceback, nonstdlib
+import inspect, logging, traceback, nonstdlib
 from string import capwords
 from contextlib import contextmanager
 
@@ -167,6 +167,8 @@ class Runner:
         self.status = ''
 
     def run(self, *suites):
+        logging.getLogger().setLevel(logging.DEBUG)
+
         for suite in suites:
             self.successes = 0
             self.failures = 0
